@@ -1,17 +1,83 @@
-import React, { useState } from 'react';
+import React, { createContext, useReducer, useRef, useState } from 'react';
 
 import { Todo } from '../types/Todo';
 import { ContextType } from '../types/ContextType';
+import { Action } from '../types/Action';
+import { Status } from '../types/Status';
 
-export const TodoContext = React.createContext<ContextType | null>(null);
+export const TodoContext = createContext<ContextType | null>(null);
 
-interface Props{
+interface Props {
   children: JSX.Element;
 }
 
 export const Context: React.FC<Props> = ({ children }) => {
-  const [todos, setTodos] = useState<Todo[]>([]);
   const [value, setValue] = useState('');
+  const [filter, setFilter] = useState(Status.all);
+
+  const ref = useRef(false);
+
+  const reducer = (state: Todo[], action: Action) => {
+    switch (action.type) {
+      case 'add':
+        return [
+          ...state,
+          {
+            id: +new Date(),
+            title: action.payload,
+            completed: false,
+          },
+        ];
+      case 'delete':
+        return state.filter((todo) => todo.id !== action.payload);
+      case 'deleteCompleted':
+        return state.filter((todo) => !todo.completed);
+      case 'setAllChecked': {
+        if (!ref.current) {
+          ref.current = !ref.current;
+
+          return state.map((el) => ({
+            ...el,
+            completed: true,
+          }));
+        }
+
+        ref.current = !ref.current;
+
+        return state.map((el) => ({
+          ...el,
+          completed: false,
+        }));
+      }
+
+      case 'setChecked':
+        return state.map((todo) => {
+          if (todo.id === action.payload) {
+            return {
+              ...todo,
+              completed: !todo.completed,
+            };
+          }
+
+          return todo;
+        });
+      case 'edit':
+        return state.map(todo => {
+          if (todo.id === action.payload.todoId) {
+            return {
+              ...todo,
+              title: action.payload.name,
+            };
+          }
+
+          return todo;
+        });
+      default:
+        return state;
+    }
+  };
+
+  const [todosState, dispatch] = useReducer(reducer, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
@@ -22,65 +88,41 @@ export const Context: React.FC<Props> = ({ children }) => {
       event.preventDefault();
 
       if (value.trim()) {
-        setTodos([
-          ...todos,
-          {
-            id: +new Date(),
-            title: value.trim(),
-            completed: false,
-          },
-        ]);
+        dispatch({ type: 'add', payload: value.trim() });
 
         setValue('');
       }
     }
   };
 
-  const setTodoChecked = (todoId: number) => {
-    const newTodos = todos.map(todo => {
-      if (todo.id === todoId) {
-        return (
-          {
-            ...todo,
-            completed: !todo.completed,
-          }
-        );
-      }
-
-      return todo;
-    });
-
-    setTodos(newTodos);
+  const handleFilter = (name: Status) => {
+    setFilter(name);
   };
 
-  const setAllChecked = () => {
-    const allChecked = todos.map(todo => (
-      {
-        ...todo,
-        completed: !todo.completed,
-      }
-    ));
-
-    setTodos(allChecked);
+  const filterTodos = (nameOfFilter: string) => {
+    switch (nameOfFilter) {
+      case Status.all:
+      default:
+        return todosState;
+      case Status.active:
+        return todosState.filter((todo) => !todo.completed);
+      case Status.completed:
+        return todosState.filter((todo) => todo.completed);
+    }
   };
 
-  const handleDelete = (todoId: number) => {
-    setTodos(allTodos => allTodos.filter(todo => todo.id !== todoId));
-  };
+  const filteredTodos = filterTodos(filter);
 
   const params = {
-    todos,
+    allTodos: todosState,
+    todos: filteredTodos,
     value,
+    filter,
+    handleFilter,
     handleChange,
     handleKeyDown,
-    setTodoChecked,
-    setAllChecked,
-    handleDelete,
+    dispatch,
   };
 
-  return (
-    <TodoContext.Provider value={params}>
-      {children}
-    </TodoContext.Provider>
-  );
+  return <TodoContext.Provider value={params}>{children}</TodoContext.Provider>;
 };

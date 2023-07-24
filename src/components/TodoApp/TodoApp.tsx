@@ -9,16 +9,16 @@ import { TodosFilter } from '../TodosFilter/TodosFilter';
 
 export const TodoApp: React.FC = () => {
   const {
-    todos,
-    value,
-    handleChange,
-    handleKeyDown,
-    setAllChecked,
+    allTodos, value, handleChange, handleKeyDown, dispatch,
   } = React.useContext(TodoContext) as ContextType;
 
   function areChecked() {
-    return todos.every(todo => todo.completed);
+    return allTodos.every((todo) => todo.completed);
   }
+
+  const activeTodos = allTodos.filter((todo) => !todo.completed);
+
+  const anyCompleted = allTodos.some((todo) => todo.completed);
 
   return (
     <div className="todoapp">
@@ -38,31 +38,37 @@ export const TodoApp: React.FC = () => {
         </form>
       </header>
 
-      <section className={cn('main', { hidden: todos.length === 0 })}>
+      <section className={cn('main', { hidden: allTodos.length === 0 })}>
         <input
           type="checkbox"
           id="toggle-all"
           checked={areChecked()}
           className="toggle-all"
           data-cy="toggleAll"
-          onChange={() => setAllChecked()}
+          onChange={() => dispatch({ type: 'setAllChecked' })}
         />
         <label htmlFor="toggle-all">Mark all as complete</label>
 
         <TodoList />
       </section>
 
-      {todos.length > 0 && (
-        <footer className="footer">
+      {allTodos.length > 0 && (
+        <footer className="footer" data-cy="todosFilter">
           <span className="todo-count" data-cy="todosCounter">
-            {`${todos.length} items left`}
+            {`${activeTodos.length} items left`}
           </span>
 
           <TodosFilter />
 
-          <button type="button" className="clear-completed">
-            Clear completed
-          </button>
+          {anyCompleted && (
+            <button
+              type="button"
+              className="clear-completed"
+              onClick={() => dispatch({ type: 'deleteCompleted' })}
+            >
+              Clear completed
+            </button>
+          )}
         </footer>
       )}
     </div>

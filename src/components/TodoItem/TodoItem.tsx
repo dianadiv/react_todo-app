@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 
 import cn from 'classnames';
 
@@ -11,30 +11,84 @@ interface Props {
 }
 
 export const TodoItem: React.FC<Props> = ({ todo }) => {
-  const {
-    setTodoChecked, handleDelete,
-  } = React.useContext(TodoContext) as ContextType;
+  const [editing, setEditing] = useState(false);
+  const [editingValue, setEditingValue] = useState(todo.title);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const { dispatch } = React.useContext(TodoContext) as ContextType;
+
+  const handleSave = () => {
+    if (editingValue.trim().length > 0) {
+      dispatch({
+        type: 'edit',
+        payload: { name: editingValue, todoId: todo.id },
+      });
+    } else {
+      dispatch({
+        type: 'delete',
+        payload: todo.id,
+      });
+    }
+
+    setEditing(false);
+  };
+
+  const handleKeyUp = (event: React.KeyboardEvent) => {
+    event.preventDefault();
+
+    if (event.key === 'Escape') {
+      setEditing(false);
+    }
+
+    if (event.key === 'Enter') {
+      handleSave();
+    }
+  };
 
   return (
-    <li className={cn({ completed: todo.completed })}>
-      <div className="view">
-        <input
-          type="checkbox"
-          checked={todo.completed}
-          className="toggle"
-          id="toggle-editing"
-          onChange={() => setTodoChecked(todo.id)}
-        />
-        <label htmlFor="toggle-view">{todo.title}</label>
-        <button
-          type="button"
-          className="destroy"
-          data-cy="deleteTodo"
-          aria-label="delete"
-          onClick={() => handleDelete(todo.id)}
-        />
-      </div>
-      <input type="text" className="edit" />
+    <li
+      className={cn({ completed: todo.completed, editing })}
+      onDoubleClick={() => {
+        setEditing(true);
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      }}
+    >
+      {editing
+        ? (
+          <input
+            ref={inputRef}
+            type="text"
+            className="edit"
+            defaultValue={todo.title}
+            onChange={(event) => setEditingValue(event.target.value)}
+            onKeyUp={handleKeyUp}
+            onBlur={handleSave}
+          />
+        )
+        : (
+          <div className="view">
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              className="toggle"
+              id="toggle-editing"
+              onChange={() => (
+                dispatch({ type: 'setChecked', payload: todo.id })
+              )}
+            />
+            <label>{todo.title}</label>
+            <button
+              type="button"
+              className="destroy"
+              data-cy="deleteTodo"
+              aria-label="delete"
+              onClick={() => (
+                dispatch({ type: 'delete', payload: todo.id })
+              )}
+            />
+          </div>
+        )}
     </li>
   );
 };

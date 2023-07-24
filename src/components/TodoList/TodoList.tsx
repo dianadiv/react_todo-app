@@ -7,7 +7,7 @@ export const TodoList: React.FC = () => {
   const { todos } = React.useContext(TodoContext) as ContextType;
 
   return (
-    <ul className="todo-list" data-cy="todoList">
+    <ul className="todo-list" data-cy="todosList">
       {todos.map(item => (
         <TodoItem
           todo={item}
