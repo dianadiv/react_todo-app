@@ -13,14 +13,14 @@ interface Props {
 export const Filters: React.FC<Props> = ({
   nameOfFilter, href,
 }) => {
-  const { filter, handleFilter } = React.useContext(TodoContext) as ContextType;
+  const { filter, setFilter } = React.useContext(TodoContext) as ContextType;
 
   return (
     <li>
       <a
         href={href}
         className={cn({ selected: nameOfFilter === filter })}
-        onClick={() => handleFilter(nameOfFilter)}
+        onClick={() => setFilter(nameOfFilter)}
       >
         {nameOfFilter}
       </a>

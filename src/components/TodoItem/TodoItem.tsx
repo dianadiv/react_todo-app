@@ -14,20 +14,26 @@ export const TodoItem: React.FC<Props> = ({ todo }) => {
   const [editing, setEditing] = useState(false);
   const [editingValue, setEditingValue] = useState(todo.title);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { dispatch } = React.useContext(TodoContext) as ContextType;
+
+  const { todos, setTodos } = React.useContext(TodoContext) as ContextType;
 
   const handleSave = () => {
     if (editingValue.trim().length > 0) {
-      dispatch({
-        type: 'edit',
-        payload: { name: editingValue, todoId: todo.id },
-      });
+      setTodos((prevTodos) => {
+        return prevTodos.map(prevTodo => {
+          if (prevTodo.id === todo.id) {
+            return {
+              ...prevTodo,
+              title: editingValue.trim(),
+            };
+          }
+
+          return prevTodo;
+        });
+      })
     } else {
-      dispatch({
-        type: 'delete',
-        payload: todo.id,
-      });
-    }
+      setTodos(prevTodos => prevTodos.filter((prevTodo) => prevTodo.id !== todo.id))
+    };
 
     setEditing(false);
   };
@@ -43,6 +49,28 @@ export const TodoItem: React.FC<Props> = ({ todo }) => {
       handleSave();
     }
   };
+
+  const setCheckedItem = () => {
+     setTodos(prevTodos => {
+      return prevTodos.map((prevTodo) => {
+        if (prevTodo.id === todo.id) {
+          return {
+            ...prevTodo,
+            completed: !todo.completed,
+          };
+        }
+
+        return prevTodo;
+      });
+    })
+  }
+
+
+  const handleDelete = () => {
+    setTodos(prevTodos => prevTodos.filter((prevTodo) => prevTodo.id !== todo.id))
+  }
+
+  console.log(todos)
 
   return (
     <li
@@ -73,9 +101,7 @@ export const TodoItem: React.FC<Props> = ({ todo }) => {
               checked={todo.completed}
               className="toggle"
               id="toggle-editing"
-              onChange={() => (
-                dispatch({ type: 'setChecked', payload: todo.id })
-              )}
+              onChange={() => setCheckedItem()}
             />
             <label>{todo.title}</label>
             <button
@@ -83,48 +109,10 @@ export const TodoItem: React.FC<Props> = ({ todo }) => {
               className="destroy"
               data-cy="deleteTodo"
               aria-label="delete"
-              onClick={() => (
-                dispatch({ type: 'delete', payload: todo.id })
-              )}
+              onClick={handleDelete}
             />
           </div>
         )}
     </li>
   );
 };
-
-/* <li>
-        <div className="view">
-          <input type="checkbox" className="toggle" id="toggle-editing" />
-          <label htmlFor="toggle-view">asdfghj</label>
-          <button type="button" className="destroy" data-cy="deleteTodo" />
-        </div>
-        <input type="text" className="edit" />
-      </li>
-
-      <li className="completed">
-        <div className="view">
-          <input type="checkbox" className="toggle" id="toggle-completed" />
-          <label htmlFor="toggle-completed">qwertyuio</label>
-          <button type="button" className="destroy" data-cy="deleteTodo" />
-        </div>
-        <input type="text" className="edit" />
-      </li>
-
-      <li className="editing">
-        <div className="view">
-          <input type="checkbox" className="toggle" id="toggle-editing" />
-          <label htmlFor="toggle-editing">zxcvbnm</label>
-          <button type="button" className="destroy" data-cy="deleteTodo" />
-        </div>
-        <input type="text" className="edit" />
-      </li>
-
-      <li>
-        <div className="view">
-          <input type="checkbox" className="toggle" id="toggle-view2" />
-          <label htmlFor="toggle-view2">1234567890</label>
-          <button type="button" className="destroy" data-cy="deleteTodo" />
-        </div>
-        <input type="text" className="edit" />
-      </li> */
